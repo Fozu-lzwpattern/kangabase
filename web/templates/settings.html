@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - KangaBase{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl space-y-8">
+    <!-- Database Info -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Database</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Path</span>
+                    <p class="text-sm font-mono text-gray-900 mt-1 break-all">{{ db_info.path }}</p>
+                </div>
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Size</span>
+                    <p class="text-sm font-semibold text-gray-900 mt-1">{{ db_info.size }}</p>
+                </div>
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Tables</span>
+                    <p class="text-sm font-semibold text-gray-900 mt-1">{{ tables|length }}</p>
+                </div>
+            </div>
+
+            <!-- Table Details -->
+            {% if tables %}
+            <div class="mt-6 border-t border-gray-100 pt-6">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Table Details</h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {% for t in tables %}
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <span class="font-mono text-sm text-gray-900 block truncate">{{ t.name }}</span>
+                        <span class="text-xs text-gray-500">{{ t.rows }} rows</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- File Paths -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">File Paths</h2>
+        </div>
+        <div class="p-6 space-y-4">
+            {% for label, path in file_paths.items() %}
+            <div class="flex items-start justify-between py-2 {% if not loop.last %}border-b border-gray-50{% endif %}">
+                <span class="text-sm text-gray-500 capitalize flex-shrink-0 w-40">{{ label|replace('_', ' ') }}</span>
+                <span class="text-sm font-mono text-gray-900 text-right break-all">{{ path or 'Not configured' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- PRAGMA Configuration -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">SQLite PRAGMA</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for name, value in pragmas.items() %}
+                <div class="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+                    <span class="text-sm text-gray-600 font-mono">{{ name }}</span>
+                    <span class="text-sm font-semibold text-gray-900 font-mono">{{ value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Intent Registry -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Intent Registry</h2>
+        </div>
+        <div class="p-6">
+            <!-- Whitelist -->
+            <div class="mb-6">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Whitelist</h3>
+                {% if intent_info.whitelist %}
+                <div class="flex flex-wrap gap-2">
+                    {% for op in intent_info.whitelist %}
+                    <span class="px-3 py-1 bg-green-50 text-green-700 text-xs font-mono rounded-lg">{{ op }}</span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-400">No operations registered</p>
+                {% endif %}
+            </div>
+
+            <!-- Pattern Mappings -->
+            <div>
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Pattern Mappings</h3>
+                {% if intent_info.mappings %}
+                <div class="space-y-2">
+                    {% for mapping in intent_info.mappings %}
+                    <div class="flex items-center gap-3 py-2">
+                        <span class="text-sm font-mono text-kanga-700 bg-kanga-50 px-2 py-1 rounded">{{ mapping.pattern }}</span>
+                        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                        <span class="text-sm font-mono text-gray-700">{{ mapping.operation }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-400">No pattern mappings</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

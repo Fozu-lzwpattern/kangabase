@@ -1,0 +1,49 @@
+<!-- Table Data Partial -->
+{% if not columns %}
+<div class="px-6 py-12 text-center text-sm text-gray-400">
+    No data in this table
+</div>
+{% else %}
+<div class="overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50">
+            <tr class="text-left text-xs text-gray-500 uppercase tracking-wider">
+                {% for col in columns %}
+                <th class="px-4 py-3 font-medium">{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+            {% for row in rows %}
+            <tr class="hover:bg-gray-50/50">
+                {% for cell in row %}
+                <td class="px-4 py-3 text-gray-700 max-w-xs truncate font-mono text-xs">{{ cell if cell is not none else '-' }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+    <span class="text-sm text-gray-500">
+        Showing {{ (page - 1) * per_page + 1 }} - {{ [page * per_page, total]|min }} of {{ total }}
+    </span>
+    <div class="flex items-center gap-2">
+        {% if page > 1 %}
+        <button hx-get="/explorer/table/{{ table_name }}?page={{ page - 1 }}" hx-target="#table-content" hx-swap="innerHTML"
+            class="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            Previous
+        </button>
+        {% endif %}
+        <span class="text-sm text-gray-600">Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}
+        <button hx-get="/explorer/table/{{ table_name }}?page={{ page + 1 }}" hx-target="#table-content" hx-swap="innerHTML"
+            class="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            Next
+        </button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Explorer - KangaBase{% endblock %}
+{% block page_title %}Explorer{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Table Browser -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Table Browser</h2>
+            <div class="flex items-center gap-3">
+                <select id="table-select" class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400"
+                        hx-get="/explorer/table/{value}"
+                        hx-target="#table-content"
+                        hx-swap="innerHTML"
+                        onchange="this.setAttribute('hx-get', '/explorer/table/' + this.value); htmx.process(this); htmx.trigger(this, 'change');">
+                    <option value="">Select a table...</option>
+                    {% for table in tables %}
+                    <option value="{{ table }}">{{ table }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div id="table-content">
+            <div class="px-6 py-12 text-center text-sm text-gray-400">
+                Select a table above to browse data
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Query -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">SQL Query</h2>
+            <p class="text-xs text-gray-400 mt-1">Read-only queries only (SELECT, PRAGMA)</p>
+        </div>
+        <div class="p-6">
+            <form hx-post="/explorer/query" hx-target="#query-result" hx-swap="innerHTML">
+                <div class="relative">
+                    <textarea name="sql" rows="3" placeholder="SELECT * FROM coupons LIMIT 10"
+                        class="w-full px-4 py-3 text-sm font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400 focus:border-transparent resize-y bg-gray-50"></textarea>
+                </div>
+                <div class="mt-3 flex justify-end">
+                    <button type="submit" class="px-4 py-2 bg-dark-900 text-white text-sm rounded-lg hover:bg-dark-800 transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Run Query
+                    </button>
+                </div>
+            </form>
+            <div id="query-result" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- Intent Executor -->
+    <div class="bg-white rounded-xl border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Execute Operation</h2>
+            <p class="text-xs text-gray-400 mt-1">Run a contract operation as an agent</p>
+        </div>
+        <div class="p-6">
+            <form hx-post="/explorer/execute" hx-target="#execute-result" hx-swap="innerHTML">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Operation</label>
+                        <select name="operation" id="op-select"
+                            class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400"
+                            onchange="showOpParams(this.value)">
+                            <option value="">Select operation...</option>
+                            {% for op in operations %}
+                            <option value="{{ op }}">{{ op }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Agent ID</label>
+                        <input type="text" name="agent_id" value="webui_admin" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Agent Role</label>
+                        <input type="text" name="agent_role" value="admin" class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400">
+                    </div>
+                </div>
+
+                <!-- Dynamic Params -->
+                <div id="op-params" class="mb-4"></div>
+
+                <div class="flex justify-end">
+                    <button type="submit" class="px-4 py-2 bg-kanga-500 text-dark-900 font-medium text-sm rounded-lg hover:bg-kanga-400 transition-colors flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Execute
+                    </button>
+                </div>
+            </form>
+            <div id="execute-result" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const opParams = {{ op_params|tojson }};
+
+function showOpParams(opName) {
+    const container = document.getElementById('op-params');
+    if (!opName || !opParams[opName]) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const params = opParams[opName];
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    for (const [name, def] of Object.entries(params)) {
+        const req = def.required ? '<span class="text-red-500 ml-1">*</span>' : '';
+        html += `
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">${name}${req} <span class="text-gray-400">(${def.type})</span></label>
+                <input type="text" name="param_${name}" placeholder="${def.description || name}"
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400"
+                    ${def.required ? 'required' : ''}>
+            </div>
+        `;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Fix htmx table select
+document.addEventListener('DOMContentLoaded', function() {
+    const tableSelect = document.getElementById('table-select');
+    if (tableSelect) {
+        tableSelect.addEventListener('change', function() {
+            if (this.value) {
+                htmx.ajax('GET', '/explorer/table/' + this.value, '#table-content');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

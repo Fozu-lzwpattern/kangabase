@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Log - KangaBase{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Statistics Panel -->
+    <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl border border-gray-200 sticky top-24">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">Statistics (7d)</h3>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Total -->
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total</span>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats.total }}</p>
+                </div>
+
+                <!-- By Status -->
+                {% if stats.by_status %}
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">By Status</span>
+                    <div class="mt-3 space-y-2">
+                        {% for s, count in stats.by_status.items() %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                {% if s == 'success' %}
+                                <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                                {% elif s == 'failed' %}
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                                {% elif s == 'denied' %}
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                                {% else %}
+                                <span class="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
+                                {% endif %}
+                                <span class="text-sm text-gray-700 capitalize">{{ s }}</span>
+                            </div>
+                            <span class="text-sm font-mono font-medium text-gray-900">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if stats.total > 0 %}
+                    <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                        {% set success_count = stats.by_status.get('success', 0) %}
+                        {% set failed_count = stats.by_status.get('failed', 0) %}
+                        {% set denied_count = stats.by_status.get('denied', 0) %}
+                        {% if success_count %}
+                        <div class="bg-green-400 h-full" style="width:{{ (success_count / stats.total * 100)|round(1) }}%"></div>
+                        {% endif %}
+                        {% if failed_count %}
+                        <div class="bg-red-400 h-full" style="width:{{ (failed_count / stats.total * 100)|round(1) }}%"></div>
+                        {% endif %}
+                        {% if denied_count %}
+                        <div class="bg-yellow-400 h-full" style="width:{{ (denied_count / stats.total * 100)|round(1) }}%"></div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- By Agent -->
+                {% if stats.by_agent %}
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">By Agent</span>
+                    <div class="mt-3 space-y-2">
+                        {% for agent, count in stats.by_agent.items() %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-700 font-mono truncate max-w-[140px]">{{ agent }}</span>
+                            <span class="text-sm font-mono font-medium text-gray-900">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- By Operation -->
+                {% if stats.by_operation %}
+                <div>
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">By Operation</span>
+                    <div class="mt-3 space-y-2">
+                        {% for op, count in stats.by_operation.items() %}
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-700 font-mono truncate max-w-[140px]">{{ op }}</span>
+                            <span class="text-sm font-mono font-medium text-gray-900">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Audit Log -->
+    <div class="lg:col-span-3">
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-200 mb-6">
+            <form class="px-6 py-4 flex flex-wrap items-end gap-4" method="get" action="/audit">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Agent</label>
+                    <select name="agent_id" class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400">
+                        <option value="">All Agents</option>
+                        {% for a in agents %}
+                        <option value="{{ a }}" {% if filters.get('agent_id') == a %}selected{% endif %}>{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Operation</label>
+                    <select name="intent_name" class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400">
+                        <option value="">All Operations</option>
+                        {% for op in operations %}
+                        <option value="{{ op }}" {% if filters.get('intent_name') == op %}selected{% endif %}>{{ op }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                    <select name="status" class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400">
+                        <option value="">All Status</option>
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {% if filters.get('status') == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Limit</label>
+                    <select name="limit" class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400">
+                        {% for n in [20, 50, 100, 200] %}
+                        <option value="{{ n }}" {% if filters.get('limit') == n %}selected{% endif %}>{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="px-4 py-2 bg-dark-900 text-white text-sm rounded-lg hover:bg-dark-800 transition-colors">
+                    Filter
+                </button>
+            </form>
+        </div>
+
+        <!-- Timeline -->
+        <div class="space-y-3">
+            {% for log in logs %}
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 cursor-pointer hover:bg-gray-50/50 transition-colors flex items-center justify-between"
+                     onclick="toggleAuditEntry('{{ log.id }}')">
+                    <div class="flex items-center gap-4">
+                        {% if log.status == 'success' %}
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        </span>
+                        {% elif log.status == 'failed' %}
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </span>
+                        {% elif log.status == 'denied' %}
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        </span>
+                        {% else %}
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        {% endif %}
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-sm font-semibold text-gray-900">{{ log.intent_name }}</span>
+                                {% if log.risk_score and log.risk_score > 0 %}
+                                <span class="text-xs px-1.5 py-0.5 rounded-full {% if log.risk_score >= 0.7 %}bg-red-50 text-red-700{% elif log.risk_score >= 0.3 %}bg-yellow-50 text-yellow-700{% else %}bg-green-50 text-green-700{% endif %}">
+                                    risk: {{ "%.2f"|format(log.risk_score) }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-0.5">
+                                by <span class="font-mono">{{ log.agent_id }}</span>
+                                {% if log.agent_role %} ({{ log.agent_role }}){% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        {% if log.execution_ms %}
+                        <span class="font-mono">{{ "%.1f"|format(log.execution_ms) }}ms</span>
+                        {% endif %}
+                        <span>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '' }}</span>
+                        <svg class="w-4 h-4 transition-transform" id="audit-chevron-{{ log.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Detail -->
+                <div id="audit-detail-{{ log.id }}" class="hidden border-t border-gray-100 px-6 py-4 bg-gray-50/50">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-xs font-medium text-gray-500">Session ID</span>
+                            <p class="font-mono text-xs text-gray-700 mt-1">{{ log.session_id or '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-500">Source</span>
+                            <p class="text-xs text-gray-700 mt-1">{{ log.intent_source }}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <span class="text-xs font-medium text-gray-500">Parameters</span>
+                            <pre class="text-xs font-mono bg-white border border-gray-200 rounded-lg p-3 mt-1 overflow-x-auto">{{ log.intent_params or '{}' }}</pre>
+                        </div>
+                        {% if log.sql_executed %}
+                        <div class="md:col-span-2">
+                            <span class="text-xs font-medium text-gray-500">SQL Executed</span>
+                            <pre class="text-xs font-mono bg-white border border-gray-200 rounded-lg p-3 mt-1 overflow-x-auto">{{ log.sql_executed }}</pre>
+                        </div>
+                        {% endif %}
+                        {% if log.error_message %}
+                        <div class="md:col-span-2">
+                            <span class="text-xs font-medium text-gray-500">Error</span>
+                            <p class="text-xs text-red-600 mt-1">{{ log.error_message }}</p>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <span class="text-xs font-medium text-gray-500">Affected Rows</span>
+                            <p class="text-xs text-gray-700 mt-1">{{ log.affected_rows }}</p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-medium text-gray-500">Flags</span>
+                            <p class="text-xs text-gray-700 mt-1">
+                                {% if log.sandbox_used %}🔒 sandbox{% endif %}
+                                {% if log.human_confirmed %}✅ confirmed{% endif %}
+                                {% if not log.sandbox_used and not log.human_confirmed %}-{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not logs %}
+            <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <p class="text-gray-400 text-sm">No audit entries found</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAuditEntry(id) {
+    const detail = document.getElementById('audit-detail-' + id);
+    const chevron = document.getElementById('audit-chevron-' + id);
+    if (detail.classList.contains('hidden')) {
+        detail.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        detail.classList.add('hidden');
+        chevron.style.transform = '';
+    }
+}
+</script>
+{% endblock %}

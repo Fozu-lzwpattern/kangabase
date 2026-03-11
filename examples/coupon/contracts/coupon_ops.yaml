@@ -1,0 +1,145 @@
+version: "1.0"
+namespace: coupon_system
+
+operations:
+  issue_coupon:
+    description: "向用户发放优惠券"
+    intent_patterns: 
+      - "发券给{user_id}"
+      - "发放优惠券"
+      - "issue coupon"
+    params:
+      user_id: 
+        type: string
+        required: true
+      amount: 
+        type: decimal
+        required: true
+        min: 1
+        max: 100
+      min_order: 
+        type: decimal
+        required: true
+        min: 0
+      campaign_id: 
+        type: string
+        required: true
+    preconditions:
+      - sql: "SELECT budget FROM campaigns WHERE id = :campaign_id AND status = 'active'"
+        check: "result.budget >= :amount"
+        error: "活动预算不足或活动未激活"
+    steps:
+      - sql: "INSERT INTO coupons (id, amount, min_order, status, user_id, campaign_id, created_at) VALUES (:id, :amount, :min_order, 'issued', :user_id, :campaign_id, datetime('now'))"
+        generate: { id: "uuid" }
+      - sql: "UPDATE campaigns SET budget = budget - :amount WHERE id = :campaign_id"
+    effects:
+      - event: "coupon_issued"
+        data: { coupon_id: ":id", user_id: ":user_id", amount: ":amount", campaign_id: ":campaign_id" }
+    compensation:
+      - sql: "DELETE FROM coupons WHERE id = :id"
+      - sql: "UPDATE campaigns SET budget = budget + :amount WHERE id = :campaign_id"
+    risk_level: medium
+
+  use_coupon:
+    description: "用户使用优惠券"
+    intent_patterns: 
+      - "用券{coupon_id}"
+      - "使用优惠券"
+      - "use coupon"
+    params:
+      coupon_id: 
+        type: string
+        required: true
+      user_id: 
+        type: string
+        required: true
+    preconditions:
+      - sql: "SELECT status, user_id, amount FROM coupons WHERE id = :coupon_id"
+        check: "result.status == 'issued' and result.user_id == :user_id"
+        error: "券不可用或不属于该用户"
+    steps:
+      - sql: "UPDATE coupons SET status = 'used', used_at = datetime('now') WHERE id = :coupon_id"
+    effects:
+      - event: "coupon_used"
+        data: { coupon_id: ":coupon_id", user_id: ":user_id" }
+    compensation:
+      - sql: "UPDATE coupons SET status = 'issued', used_at = NULL WHERE id = :coupon_id"
+    risk_level: low
+
+  query_coupons:
+    description: "查询优惠券"
+    intent_patterns: 
+      - "查看{user_id}的券"
+      - "查询优惠券"
+      - "list coupons"
+    params:
+      user_id: 
+        type: string
+        required: false
+      status: 
+        type: string
+        required: false
+    steps:
+      - sql: "SELECT * FROM coupons WHERE (:user_id IS NULL OR user_id = :user_id) AND (:status IS NULL OR status = :status) ORDER BY created_at DESC LIMIT 100"
+    risk_level: low
+    read_only: true
+
+  expire_coupon:
+    description: "过期券"
+    intent_patterns: 
+      - "过期券{coupon_id}"
+      - "过期优惠券"
+    params:
+      coupon_id: 
+        type: string
+        required: true
+    preconditions:
+      - sql: "SELECT status FROM coupons WHERE id = :coupon_id"
+        check: "result.status == 'issued'"
+        error: "只能过期已发放的券"
+    steps:
+      - sql: "UPDATE coupons SET status = 'expired' WHERE id = :coupon_id"
+    effects:
+      - event: "coupon_expired"
+        data: { coupon_id: ":coupon_id" }
+    risk_level: low
+
+  create_campaign:
+    description: "创建营销活动"
+    intent_patterns: 
+      - "创建活动{name}"
+      - "新建活动"
+    params:
+      name: 
+        type: string
+        required: true
+      budget: 
+        type: decimal
+        required: true
+        min: 0
+    steps:
+      - sql: "INSERT INTO campaigns (id, name, budget, status, created_at) VALUES (:id, :name, :budget, 'draft', datetime('now'))"
+        generate: { id: "uuid" }
+    effects:
+      - event: "campaign_created"
+        data: { campaign_id: ":id", name: ":name", budget: ":budget" }
+    risk_level: medium
+
+  activate_campaign:
+    description: "激活营销活动"
+    intent_patterns: 
+      - "激活活动{campaign_id}"
+    params:
+      campaign_id: 
+        type: string
+        required: true
+    preconditions:
+      - sql: "SELECT status FROM campaigns WHERE id = :campaign_id"
+        check: "result.status == 'draft'"
+        error: "只能激活草稿状态的活动"
+    steps:
+      - sql: "UPDATE campaigns SET status = 'active' WHERE id = :campaign_id"
+    effects:
+      - event: "campaign_activated"
+        data: { campaign_id: ":campaign_id" }
+    risk_level: low

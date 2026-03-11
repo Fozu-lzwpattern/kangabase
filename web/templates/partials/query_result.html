@@ -1,0 +1,38 @@
+<!-- Query Result Partial -->
+{% if error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <div class="flex items-center gap-2 text-red-700">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm font-medium">{{ error }}</span>
+    </div>
+</div>
+{% elif columns %}
+<div class="border border-gray-200 rounded-lg overflow-hidden">
+    <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+        <span class="text-xs text-gray-500 font-mono">{{ sql }}</span>
+        <span class="text-xs text-gray-500">{{ row_count }} rows</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr class="text-left text-xs text-gray-500 uppercase tracking-wider">
+                    {% for col in columns %}
+                    <th class="px-4 py-2 font-medium">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for row in rows %}
+                <tr class="hover:bg-gray-50/50">
+                    {% for cell in row %}
+                    <td class="px-4 py-2 text-gray-700 font-mono text-xs">{{ cell if cell is not none else '-' }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}

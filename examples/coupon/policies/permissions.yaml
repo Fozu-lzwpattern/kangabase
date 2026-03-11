@@ -1,0 +1,47 @@
+version: "1.0"
+
+agents:
+  enterprise_agent:
+    role: "asB"
+    allowed_intents: 
+      - create_campaign
+      - activate_campaign
+      - issue_coupon
+      - query_coupons
+      - expire_coupon
+    denied_intents: 
+      - use_coupon
+    constraints:
+      issue_coupon: 
+        max_amount: 100
+        max_daily_count: 10000
+      create_campaign:
+        max_budget: 1000000
+
+  consumer_agent:
+    role: "asC"
+    allowed_intents: 
+      - use_coupon
+      - query_coupons
+    denied_intents: 
+      - issue_coupon
+      - expire_coupon
+      - create_campaign
+      - activate_campaign
+
+  admin_agent:
+    role: "admin"
+    allowed_intents: 
+      - create_campaign
+      - activate_campaign
+      - issue_coupon
+      - use_coupon
+      - query_coupons
+      - expire_coupon
+    denied_intents: []
+
+risk_thresholds:
+  auto_execute: 0.3
+  execute_with_log: 0.7
+  require_confirmation: 0.9
+  deny: 1.0

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KangaBase{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kanga': {
+                            50: '#FFFDF0',
+                            100: '#FFF9D6',
+                            200: '#FFF0A3',
+                            300: '#FFE770',
+                            400: '#FFDD3D',
+                            500: '#FFD100',
+                            600: '#D4AE00',
+                            700: '#AA8B00',
+                            800: '#806800',
+                            900: '#554500',
+                        },
+                        'dark': {
+                            800: '#1E293B',
+                            900: '#0F172A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-gray-50" hx-boost="true">
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-dark-900 text-white flex flex-col flex-shrink-0 fixed h-full z-10">
+            <!-- Logo -->
+            <div class="px-6 py-5 border-b border-white/10">
+                <a href="/" class="flex items-center gap-3 group">
+                    <span class="text-3xl">🦘</span>
+                    <div>
+                        <span class="text-lg font-semibold tracking-tight group-hover:text-kanga-400 transition-colors">KangaBase</span>
+                        <span class="block text-[11px] text-gray-500 font-mono">v0.1.0</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <a href="/" class="nav-item {% if active_page == 'dashboard' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/schemas" class="nav-item {% if active_page == 'schemas' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                    </svg>
+                    <span>Schemas</span>
+                </a>
+                <a href="/contracts" class="nav-item {% if active_page == 'contracts' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Contracts</span>
+                </a>
+                <a href="/explorer" class="nav-item {% if active_page == 'explorer' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <span>Explorer</span>
+                </a>
+                <a href="/audit" class="nav-item {% if active_page == 'audit' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Audit Log</span>
+                </a>
+                <a href="/agents" class="nav-item {% if active_page == 'agents' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <span>Agents</span>
+                </a>
+                <a href="/settings" class="nav-item {% if active_page == 'settings' %}nav-active{% endif %}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-white/10 text-xs text-gray-500">
+                Agent-Native Database
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 overflow-auto">
+            <!-- Top bar -->
+            <header class="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-5">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-xl font-semibold text-gray-900">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="flex items-center gap-4">
+                        {% block header_actions %}{% endblock %}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="p-8">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

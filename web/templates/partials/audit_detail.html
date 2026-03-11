@@ -1,0 +1,41 @@
+<!-- Audit Entry Detail (htmx partial) -->
+{% if entry %}
+<div class="p-4 bg-gray-50/50">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div>
+            <span class="text-xs font-medium text-gray-500">ID</span>
+            <p class="font-mono text-xs text-gray-700 mt-1">{{ entry.id }}</p>
+        </div>
+        <div>
+            <span class="text-xs font-medium text-gray-500">Session ID</span>
+            <p class="font-mono text-xs text-gray-700 mt-1">{{ entry.session_id or '-' }}</p>
+        </div>
+        <div>
+            <span class="text-xs font-medium text-gray-500">Source</span>
+            <p class="text-xs text-gray-700 mt-1">{{ entry.intent_source }}</p>
+        </div>
+        <div>
+            <span class="text-xs font-medium text-gray-500">Affected Rows</span>
+            <p class="text-xs text-gray-700 mt-1">{{ entry.affected_rows }}</p>
+        </div>
+        <div class="md:col-span-2">
+            <span class="text-xs font-medium text-gray-500">Parameters</span>
+            <pre class="text-xs font-mono bg-white border border-gray-200 rounded-lg p-3 mt-1 overflow-x-auto">{{ entry.intent_params or '{}' }}</pre>
+        </div>
+        {% if entry.sql_executed %}
+        <div class="md:col-span-2">
+            <span class="text-xs font-medium text-gray-500">SQL Executed</span>
+            <pre class="text-xs font-mono bg-white border border-gray-200 rounded-lg p-3 mt-1 overflow-x-auto">{{ entry.sql_executed }}</pre>
+        </div>
+        {% endif %}
+        {% if entry.error_message %}
+        <div class="md:col-span-2">
+            <span class="text-xs font-medium text-gray-500">Error</span>
+            <p class="text-xs text-red-600 mt-1">{{ entry.error_message }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="p-4 text-red-500 text-sm">Entry not found</div>
+{% endif %}

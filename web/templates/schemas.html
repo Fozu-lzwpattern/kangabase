@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Schemas - KangaBase{% endblock %}
+{% block page_title %}Schemas{% endblock %}
+{% block header_actions %}
+<span class="text-sm text-gray-400">{{ entities|length }} entities</span>
+{% endblock %}
+
+{% block content %}
+<div class="flex gap-6">
+    <!-- Entity List (Left Panel) -->
+    <div class="w-72 flex-shrink-0">
+        <div class="bg-white rounded-xl border border-gray-200 sticky top-24">
+            <div class="p-4 border-b border-gray-100">
+                <input type="text" id="schema-search" placeholder="Search entities..."
+                    class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-kanga-400 focus:border-transparent"
+                    onkeyup="filterEntities(this.value)">
+            </div>
+            <div class="divide-y divide-gray-50 max-h-[calc(100vh-240px)] overflow-y-auto" id="entity-list">
+                {% for name, entity in entities.items() %}
+                <a href="#" class="entity-item block px-4 py-3 hover:bg-kanga-50/50 transition-colors cursor-pointer {% if name == selected %}bg-kanga-50 border-l-2 border-kanga-500{% else %}border-l-2 border-transparent{% endif %}"
+                   data-entity="{{ name }}"
+                   hx-get="/schemas/detail/{{ name }}"
+                   hx-target="#schema-detail"
+                   hx-swap="innerHTML"
+                   onclick="selectEntity(this)">
+                    <div class="font-medium text-sm text-gray-900">{{ entity.name }}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">{{ entity.description or entity.table }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ entity.field_count }} fields • {{ entity.table }}</div>
+                </a>
+                {% endfor %}
+                {% if not entities %}
+                <div class="px-4 py-8 text-center text-sm text-gray-400">
+                    No entities loaded
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Entity Detail (Right Panel) -->
+    <div class="flex-1 min-w-0" id="schema-detail">
+        {% if selected and entities[selected] %}
+        {% set entity = entities[selected] %}
+        <div class="bg-white rounded-xl border border-gray-200">
+            <!-- Header -->
+            <div class="px-6 py-5 border-b border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">{{ entity.name }}</h2>
+                        <p class="text-sm text-gray-500 mt-1">{{ entity.description }}</p>
+                    </div>
+                    <span class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-mono rounded-full">{{ entity.table }}</span>
+                </div>
+            </div>
+
+            <!-- Fields Table -->
+            <div class="px-6 py-4">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Fields</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-xs text-gray-500 uppercase tracking-wider">
+                                <th class="pb-3 pr-4">Name</th>
+                                <th class="pb-3 pr-4">Type</th>
+                                <th class="pb-3 pr-4">SQL Type</th>
+                                <th class="pb-3 pr-4">Description</th>
+                                <th class="pb-3 pr-4">Constraints</th>
+                                <th class="pb-3">Synonyms</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for fname, f in entity.fields.items() %}
+                            <tr class="hover:bg-gray-50/50">
+                                <td class="py-3 pr-4">
+                                    <span class="font-mono text-sm {% if fname == entity.primary_key %}text-kanga-700 font-semibold{% else %}text-gray-900{% endif %}">{{ fname }}</span>
+                                    {% if fname == entity.primary_key %}
+                                    <span class="ml-1 text-[10px] bg-kanga-100 text-kanga-700 px-1.5 py-0.5 rounded-full">PK</span>
+                                    {% endif %}
+                                    {% if f.auto %}
+                                    <span class="ml-1 text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full">{{ f.auto }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 pr-4 text-gray-600">{{ f.type }}</td>
+                                <td class="py-3 pr-4 font-mono text-xs text-gray-500">{{ f.sql_type }}</td>
+                                <td class="py-3 pr-4 text-gray-600 max-w-xs truncate">{{ f.description }}</td>
+                                <td class="py-3 pr-4 text-xs text-gray-500">
+                                    {% if f.constraints %}
+                                        {% for k, v in f.constraints.items() %}
+                                        <span class="inline-block bg-gray-100 px-1.5 py-0.5 rounded mr-1">{{ k }}={{ v }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if not f.nullable %}
+                                    <span class="inline-block bg-red-50 text-red-600 px-1.5 py-0.5 rounded">required</span>
+                                    {% endif %}
+                                    {% if f.enum_values %}
+                                    <span class="inline-block bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded">enum</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-xs text-gray-400">
+                                    {% if f.synonyms %}{{ f.synonyms|join(', ') }}{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Enum Values -->
+            {% set has_enums = entity.fields.values()|selectattr('enum_values')|list %}
+            {% if has_enums %}
+            <div class="px-6 py-4 border-t border-gray-100">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Enum Values</h3>
+                <div class="space-y-3">
+                    {% for fname, f in entity.fields.items() %}
+                    {% if f.enum_values %}
+                    <div>
+                        <span class="font-mono text-sm text-gray-700">{{ fname }}:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            {% for val in f.enum_values %}
+                            <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md font-mono">{{ val }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <p class="text-gray-400">Select an entity to view details</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterEntities(query) {
+    const items = document.querySelectorAll('.entity-item');
+    const q = query.toLowerCase();
+    items.forEach(item => {
+        const name = item.dataset.entity.toLowerCase();
+        const text = item.textContent.toLowerCase();
+        item.style.display = (name.includes(q) || text.includes(q)) ? '' : 'none';
+    });
+}
+
+function selectEntity(el) {
+    document.querySelectorAll('.entity-item').forEach(item => {
+        item.classList.remove('bg-kanga-50', 'border-kanga-500');
+        item.classList.add('border-transparent');
+    });
+    el.classList.add('bg-kanga-50', 'border-kanga-500');
+    el.classList.remove('border-transparent');
+}
+</script>
+{% endblock %}

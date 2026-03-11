@@ -1,0 +1,64 @@
+version: "1.0"
+namespace: coupon_system
+entities:
+  - name: Coupon
+    description: "优惠券"
+    storage: { table: coupons }
+    fields:
+      id: 
+        type: string
+        auto: uuid
+        description: "唯一标识"
+      amount: 
+        type: decimal
+        description: "面额（元）"
+        constraints: { positive: true, max: 100 }
+        synonyms: ["面额", "金额"]
+      min_order: 
+        type: decimal
+        description: "最低消费门槛"
+        synonyms: ["门槛"]
+      status: 
+        type: enum
+        values: [created, issued, used, expired, refunded]
+        description: "状态"
+      user_id: 
+        type: string
+        description: "持券用户"
+        synonyms: ["用户"]
+      campaign_id: 
+        type: string
+        description: "所属活动"
+        synonyms: ["活动"]
+      created_at: 
+        type: datetime
+        auto: now
+        description: "创建时间"
+      used_at: 
+        type: datetime
+        description: "使用时间"
+
+  - name: Campaign
+    description: "营销活动"
+    storage: { table: campaigns }
+    fields:
+      id: 
+        type: string
+        auto: uuid
+        description: "活动ID"
+      name: 
+        type: string
+        description: "活动名称"
+        synonyms: ["活动名"]
+      budget: 
+        type: decimal
+        description: "预算（元）"
+        constraints: { positive: true }
+        synonyms: ["预算"]
+      status: 
+        type: enum
+        values: [draft, active, paused, ended]
+        description: "状态"
+      created_at: 
+        type: datetime
+        auto: now
